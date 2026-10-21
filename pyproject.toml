@@ -1,0 +1,50 @@
+[build-system]
+requires = ["setuptools>=68"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "wechat-mcp"
+version = "1.0.0"
+description = "MCP server for WeChat 4.1+ desktop automation, powered by pyweixin"
+readme = "README.md"
+requires-python = ">=3.10"
+license = { text = "MIT" }
+authors = [{ name = "wechat-mcp contributors" }]
+keywords = ["mcp", "model-context-protocol", "wechat", "weixin", "rpa", "automation"]
+classifiers = [
+    "Development Status :: 4 - Beta",
+    "Intended Audience :: Developers",
+    "License :: OSI Approved :: MIT License",
+    "Natural Language :: Chinese (Simplified)",
+    "Operating System :: Microsoft :: Windows",
+    "Programming Language :: Python :: 3.10",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+    "Programming Language :: Python :: 3.13",
+    "Topic :: Communications :: Chat",
+]
+
+dependencies = [
+    "mcp>=1.9.0",
+    # pywechat127 内含 pyweixin(微信 4.1.6+) 与 pywechat(微信 3.9)
+    "pywechat127>=1.9.8; sys_platform == 'win32'",
+]
+
+[project.optional-dependencies]
+dev = ["pytest>=8.0"]
+
+[project.scripts]
+wechat-mcp = "wechat_mcp.server:main"
+
+[project.urls]
+Documentation = "https://github.com/Hello-Mr-Crab/pywechat"
+
+[tool.setuptools.packages.find]
+where = ["src"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+addopts = "-q"
+
+[tool.ruff]
+line-length = 110

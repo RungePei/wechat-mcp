@@ -1,0 +1,26 @@
+# Python
+__pycache__/
+*.py[cod]
+*.egg-info/
+.eggs/
+build/
+dist/
+.venv/
+venv/
+
+# 测试与工具
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+.coverage
+htmlcov/
+
+# 参考资料（本地克隆的上游仓库）
+.refs/
+
+# 本地工作区数据（含 Agent 记忆，不发布）
+.workbuddy/
+
+# 运行产物
+chat_history/
+*.log
