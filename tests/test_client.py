@@ -14,6 +14,7 @@ from wechat_mcp.wechat_client import (
     WeChatUnavailable,
     _install_chat_history_title_compat,
     jsonable,
+    load_pyweixin,
 )
 from fake_wechat import FakeFramework, wechat_label
 
@@ -245,6 +246,18 @@ class TestMiscTools:
         payload = client.get_weixin_info()
         assert payload["running"] is True
         assert payload["about"]["版本"] == "4.1.9.30"
+
+
+class TestPlatformGuard:
+    """pyweixin 依赖 Win32 API，非 Windows 平台必须给出明确错误而不是崩溃。"""
+
+    @pytest.mark.parametrize("platform", ["darwin", "linux"])
+    def test_non_windows_raises_clear_error(self, monkeypatch, platform):
+        monkeypatch.setattr(sys, "platform", platform)
+        with pytest.raises(WeChatUnavailable) as exc:
+            load_pyweixin()
+        assert platform in str(exc.value)
+        assert "Windows" in (exc.value.hint or "")
 
 
 class TestJsonable:

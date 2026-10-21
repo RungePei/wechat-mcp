@@ -46,12 +46,45 @@
 
 | 项 | 要求 |
 | --- | --- |
-| 操作系统 | Windows 10 / 11（仅此，`pyweixin` 依赖 Win32 UI 自动化） |
+| 操作系统 | **仅 Windows 10 / 11**（详见下方「平台支持」） |
 | 微信 | 桌面版 **4.1.6 及以上**，已启动并登录 |
 | Python | 3.10+ |
 | 依赖 | `pywechat127 >= 1.9.8`（PyPI 包名，内含 `pyweixin`）、`mcp >= 1.9.0` |
 
 > **重要**：调用期间请勿手动操作微信窗口，否则会打断 UI 自动化流程。
+
+### 平台支持
+
+| 平台 | 状态 | 说明 |
+| --- | --- | --- |
+| Windows 10 / 11 | ✅ 支持 | 唯一受支持的平台，已在微信 4.1.15.56 上实测 |
+| macOS | ❌ 不支持 | 见下方原因 |
+| Linux | ❌ 不支持 | 见下方原因 |
+
+**为什么只能跑 Windows**：自动化能力来自 `pyweixin`，其底层是 `pywinauto`
+（UI Automation）加 `win32gui` / `winreg` / `win32clipboard` / `win32con` / `pycaw`
+等 Win32 接口；`pywechat127` 在包元数据中也只声明了 `Platforms: Windows` 与
+`Operating System :: Microsoft :: Windows`。微信在 macOS 上是原生 App，UI 树和
+可访问性接口完全不同，这些 Win32 调用无法复用。
+
+**在 macOS / Linux 上会发生什么**：MCP 层（`server.py` / `args.py` / `dates.py` /
+`config.py`）是纯 Python、与平台无关，`pip install` 会因 `sys_platform` 标记自动跳过
+`pywechat127`，服务器仍可启动并列出 14 个工具，但任一工具调用都会返回结构化错误，
+不会崩溃：
+
+```json
+{
+  "status": "error",
+  "error_type": "WeChatUnavailable",
+  "message": "当前平台 darwin 不受支持，pyweixin 只能驱动 Windows 桌面版微信。",
+  "hint": "请在 Windows 10/11 上运行本 MCP 服务器。"
+}
+```
+
+**若要移植**：无需重写工具层，只需替换 `wechat_client.py` 中与 `pyweixin` 交互的
+那一层（约 10 个方法），改用目标平台的原生可访问性接口（macOS 可用 AppleScript /
+`PyObjC` 的 AXUIElement，Linux 可用 AT-SPI）。工具定义、参数 schema、日期解析、
+配置与测试均可直接复用：`build_server(client=...)` 已支持注入自定义客户端实现。
 
 ---
 
@@ -208,7 +241,7 @@ git 版都能正常工作，且修复上线后补丁会自动失效（首次即�
 
 ## 七、已知限制
 
-- 仅支持 Windows；必须保持微信已登录、窗口未被锁屏。
+- **仅支持 Windows**（macOS / Linux 的现状与原因见「平台支持」）；必须保持微信已登录、窗口未被锁屏。
 - 受 UI 自动化固有开销影响：一次"按日期取记录"约 10~15 秒；回溯条数越多越慢。
 - 红包/转账消息在界面上没有时间戳，无法参与按日期过滤（会计入 `scanned` 但不返回）。
 - 群聊记录的发送人解析较慢，可把群成员列表通过 `group_members` 传入以提速。
@@ -224,12 +257,13 @@ pip install -e ".[dev]"
 python -m pytest
 ```
 
-测试共 89 项，覆盖：
+测试共 91 项，覆盖：
 
 - `tests/test_dates.py`：时间文本解析、目标日期解析、日期过滤与排序（含跨年、
   星期、跨零点等边界）；
 - `tests/test_args.py`：工具入参归一化（数组/JSON/换行/分隔符、误拆防护）；
-- `tests/test_client.py`：倍增回溯、空记录兼容、落盘、发送校验、引号兼容补丁；
+- `tests/test_client.py`：倍增回溯、空记录兼容、落盘、发送校验、引号兼容补丁、
+  非 Windows 平台的降级提示；
 - `tests/test_protocol.py`：**真实 stdio 子进程 + 官方 SDK 客户端**，验证工具清单、
   JSON Schema、端到端调用、错误参数处理、资源读取与 stdout 纯净性。
 
